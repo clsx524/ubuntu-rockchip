@@ -112,6 +112,25 @@ if [ "${SUITE}" == "noble" ]; then
     ) > config/archives/extra-ppas-ignore.pref.chroot
 fi
 
+if [ "${SUITE}" == "questing" ]; then
+    # Add our custom rockchip apt repo
+    curl -fsSL "${REPO_KEY_URL}" | gpg --dearmor > config/archives/ubuntu-rockchip.key.chroot
+    echo "deb [signed-by=/usr/share/keyrings/ubuntu-rockchip.gpg] ${REPO_URL} ${REPO_SUITE} main" \
+        > config/archives/ubuntu-rockchip.list.chroot
+
+    # Pin our packages above Ubuntu main
+    (
+        echo "Package: *"
+        echo "Pin: origin clsx524.github.io"
+        echo "Pin-Priority: 1001"
+    ) > config/archives/ubuntu-rockchip.pref.chroot
+
+    # Add armbian apt repo for armbian-firmware
+    curl -fsSL "https://apt.armbian.com/armbian.key" | gpg --dearmor > config/archives/armbian.key.chroot
+    echo "deb [signed-by=/usr/share/keyrings/armbian.gpg] ${ARMBIAN_REPO_URL} ${ARMBIAN_REPO_SUITE} main" \
+        > config/archives/armbian.list.chroot
+fi
+
 # Snap packages to install
 (
     echo "snapd/classic=stable"
@@ -121,6 +140,10 @@ fi
 
 # Generic packages to install
 echo "software-properties-common" > config/package-lists/my.list.chroot
+
+if [ "${SUITE}" == "questing" ]; then
+    echo "armbian-firmware" >> config/package-lists/my.list.chroot
+fi
 
 if [ "${PROJECT}" == "ubuntu" ]; then
     # Specific packages to install for ubuntu desktop
