@@ -1,0 +1,133 @@
+name: Release RK1 Questing
+
+on:
+  workflow_dispatch:
+
+run-name: Ubuntu 25.10 Questing image for Turing RK1
+
+jobs:
+  rootfs:
+    runs-on: ubuntu-latest
+    name: Build ${{ matrix.flavor }} rootfs
+    strategy:
+      matrix:
+        flavor: [server, desktop]
+
+    steps:
+      - name: Get more disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Checkout LFS
+        run: git lfs fetch && git lfs checkout
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get purge needrestart -y && sudo apt-get upgrade -y
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
+          qemu-user-static qemu-system-arm qemu-efi u-boot-tools binfmt-support \
+          debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
+          udev dosfstools uuid-runtime git-lfs device-tree-compiler python2 python3 \
+          python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
+          python3-distutils python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools
+
+      - name: Build rootfs
+        run: sudo ./build.sh --suite=questing --flavor=${{ matrix.flavor }} --rootfs-only
+
+      - name: Upload rootfs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-25.10-preinstalled-${{ matrix.flavor }}-arm64-rootfs
+          path: ./build/ubuntu-25.10-preinstalled-${{ matrix.flavor }}-arm64.rootfs.tar.xz
+          if-no-files-found: error
+
+  build:
+    runs-on: ubuntu-latest
+    needs: rootfs
+    name: Build ${{ matrix.flavor }} image
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        flavor: [server, desktop]
+
+    steps:
+      - name: Get more disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Checkout LFS
+        run: git lfs fetch && git lfs checkout
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get purge needrestart -y && sudo apt-get upgrade -y
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
+          qemu-user-static qemu-system-arm qemu-efi u-boot-tools binfmt-support \
+          debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
+          udev dosfstools uuid-runtime git-lfs device-tree-compiler python2 python3 \
+          python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
+          python3-distutils python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools
+
+      - name: Download rootfs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ubuntu-25.10-preinstalled-${{ matrix.flavor }}-arm64-rootfs
+          path: ./build/
+
+      - name: Download kernel debs from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          KERNEL_TAG=$(gh release list --repo clsx524/linux-rockchip \
+            --json tagName -q '.[0].tagName')
+          echo "Using kernel release: ${KERNEL_TAG}"
+          mkdir -p ./build
+          for DEB_URL in $(gh release view "${KERNEL_TAG}" \
+              --repo clsx524/linux-rockchip \
+              --json assets -q '.assets[].url'); do
+            wget -q -P ./build/ "${DEB_URL}"
+          done
+          ls -lh ./build/*.deb
+
+      - name: Build image
+        run: sudo ./build.sh --board=turing-rk1 --suite=questing --flavor=${{ matrix.flavor }}
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date +%Y%m%d)
+          TAG="questing-${DATE}"
+          gh release create "${TAG}" \
+            --title "Ubuntu 25.10 Questing Quokka for Turing RK1 (${DATE})" \
+            --notes "## Ubuntu 25.10 (Questing Quokka) for Turing RK1
+
+  Kernel: 6.1 (armbian rk-6.1-rkr6.1 + Ubuntu packaging)
+  Built: ${DATE}" \
+            --repo ${{ github.repository }} 2>/dev/null || true
+          gh release upload "${TAG}" \
+            ./images/ubuntu-25.10-preinstalled-${{ matrix.flavor }}-arm64-turing-rk1.img.xz \
+            ./images/ubuntu-25.10-preinstalled-${{ matrix.flavor }}-arm64-turing-rk1.img.xz.sha256 \
+            --repo ${{ github.repository }} --clobber
+
+      - name: Clean up
+        run: sync && sudo rm -rf ./images/ ./build/ && sync
