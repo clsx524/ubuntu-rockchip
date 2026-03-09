@@ -5,7 +5,7 @@ on:
 
 jobs:
   rootfs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Build ${{ matrix.flavor }} rootfs
     strategy:
       matrix:
@@ -49,7 +49,7 @@ jobs:
           if-no-files-found: error
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: rootfs
     name: Build ${{ matrix.flavor }} image
     permissions:
