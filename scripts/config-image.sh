@@ -131,6 +131,16 @@ tar -xpJf "ubuntu-${RELASE_VERSION}-preinstalled-${FLAVOR}-arm64.rootfs.tar.xz" 
 # Mount the root filesystem
 setup_mountpoint $chroot_dir
 
+# For questing, install GPG keys before apt-get update since live-build
+# may not preserve them in the rootfs tarball
+if [ "${SUITE}" == "questing" ]; then
+    mkdir -p ${chroot_dir}/etc/apt/trusted.gpg.d
+    curl -fsSL "${REPO_KEY_URL}" | gpg --dearmor \
+        > ${chroot_dir}/etc/apt/trusted.gpg.d/ubuntu-rockchip.gpg
+    curl -fsSL "https://apt.armbian.com/armbian.key" | gpg --dearmor \
+        > ${chroot_dir}/etc/apt/trusted.gpg.d/armbian.gpg
+fi
+
 # Update packages
 chroot $chroot_dir apt-get update
 chroot $chroot_dir apt-get -y upgrade
