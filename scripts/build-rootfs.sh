@@ -114,7 +114,7 @@ fi
 
 if [ "${SUITE}" == "questing" ]; then
     # Add our custom rockchip apt repo
-    curl -fsSL "${REPO_KEY_URL}" | gpg --dearmor > config/archives/ubuntu-rockchip.key.chroot
+    curl -fsSL "${REPO_KEY_URL}" | gpg --dearmor > config/archives/ubuntu-rockchip.gpg.chroot
     echo "deb [signed-by=/etc/apt/trusted.gpg.d/ubuntu-rockchip.gpg] ${REPO_URL} ${REPO_SUITE} main" \
         > config/archives/ubuntu-rockchip.list.chroot
 
@@ -126,7 +126,7 @@ if [ "${SUITE}" == "questing" ]; then
     ) > config/archives/ubuntu-rockchip.pref.chroot
 
     # Add armbian apt repo for armbian-firmware
-    curl -fsSL "https://apt.armbian.com/armbian.key" | gpg --dearmor > config/archives/armbian.key.chroot
+    curl -fsSL "https://apt.armbian.com/armbian.key" | gpg --dearmor > config/archives/armbian.gpg.chroot
     echo "deb [signed-by=/etc/apt/trusted.gpg.d/armbian.gpg] ${ARMBIAN_REPO_URL} ${ARMBIAN_REPO_SUITE} main" \
         > config/archives/armbian.list.chroot
 fi
