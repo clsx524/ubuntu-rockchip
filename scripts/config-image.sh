@@ -155,7 +155,7 @@ if [[ ${LAUNCHPAD} == "Y" ]]; then
     chroot ${chroot_dir} apt-get -y install "u-boot-${BOARD}"
 else
     cp "${uboot_package}" ${chroot_dir}/tmp/
-    chroot ${chroot_dir} apt-get -y install --no-install-recommends mtd-utils
+    chroot ${chroot_dir} apt-get -y install --no-install-recommends mtd-utils u-boot-menu
     chroot ${chroot_dir} dpkg -i "/tmp/${uboot_package}"
     chroot ${chroot_dir} apt-mark hold "$(echo "${uboot_package}" | sed -rn 's/(.*)_[[:digit:]].*/\1/p')"
 
