@@ -114,8 +114,10 @@ fi
 
 if [ "${SUITE}" == "questing" ]; then
     # Add our custom rockchip apt repo
-    curl -fsSL "${REPO_KEY_URL}" | gpg --dearmor > config/archives/ubuntu-rockchip.gpg.chroot
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/ubuntu-rockchip.gpg] ${REPO_URL} ${REPO_SUITE} main" \
+    # Use [trusted=yes] during rootfs build — live-build doesn't install
+    # .gpg.chroot keys before apt-get update runs, so signed-by verification
+    # would fail. Keys are verified in config-image.sh for the final image.
+    echo "deb [trusted=yes] ${REPO_URL} ${REPO_SUITE} main" \
         > config/archives/ubuntu-rockchip.list.chroot
 
     # Pin our packages above Ubuntu main
@@ -126,8 +128,7 @@ if [ "${SUITE}" == "questing" ]; then
     ) > config/archives/ubuntu-rockchip.pref.chroot
 
     # Add armbian apt repo for armbian-firmware
-    curl -fsSL "https://apt.armbian.com/armbian.key" | gpg --dearmor > config/archives/armbian.gpg.chroot
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/armbian.gpg] ${ARMBIAN_REPO_URL} ${ARMBIAN_REPO_SUITE} main" \
+    echo "deb [trusted=yes] ${ARMBIAN_REPO_URL} ${ARMBIAN_REPO_SUITE} main" \
         > config/archives/armbian.list.chroot
 fi
 
