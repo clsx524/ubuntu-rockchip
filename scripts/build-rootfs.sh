@@ -202,13 +202,14 @@ lb build
 
 set -eE
 
-# Verify the chroot was actually built with packages installed
+# Verify the chroot was actually built with our meta-package installed
 if [ ! -d chroot/dev ]; then
     echo "Error: lb build produced incomplete chroot (missing /dev)"
     exit 1
 fi
-if [ ! -d chroot/usr/bin ]; then
-    echo "Error: lb build produced incomplete chroot (missing /usr/bin — packages not installed)"
+if [ ! -f chroot/var/lib/dpkg/info/ubuntu-server-rockchip.list ] && \
+   [ ! -f chroot/var/lib/dpkg/info/ubuntu-desktop-rockchip.list ]; then
+    echo "Error: ubuntu-*-rockchip meta-package was not installed in chroot"
     exit 1
 fi
 
