@@ -163,7 +163,13 @@ fi
 # Build the rootfs
 lb build
 
-set -eE 
+set -eE
+
+# Verify the chroot was actually built
+if [ ! -d chroot/dev ]; then
+    echo "Error: lb build produced incomplete chroot (missing /dev) — likely a germinate failure"
+    exit 1
+fi
 
 # Tar the entire rootfs
 (cd chroot/ &&  tar -p -c --sort=name --xattrs ./*) | xz -3 -T0 > "ubuntu-${RELASE_VERSION}-preinstalled-${FLAVOR}-arm64.rootfs.tar.xz"
