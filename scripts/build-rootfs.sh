@@ -87,7 +87,8 @@ server-minimal: minimal required
 server-live: server minimal standard required
 server-ship: server minimal standard required
 EOF
-    for seed in required minimal standard server server-minimal server-live server-ship cloud-image; do
+    for seed in required minimal standard server server-minimal server-live server-ship \
+                cloud-image ubuntu-desktop desktop desktop-minimal; do
         : > "config/germinate-output/${seed}"
         : > "config/germinate-output/${seed}.snaps"
         printf "Task-Description: %s\nTask-Key: %s\n" "${seed}" "${seed}" \
