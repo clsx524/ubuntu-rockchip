@@ -197,6 +197,10 @@ else
     echo "ubuntu-server-rockchip" >> config/package-lists/my.list.chroot
 fi
 
+# Remove cloud-image SSH hook — fails on non-cloud images because
+# /etc/ssh/sshd_config.d/60-cloudimg-settings.conf doesn't exist
+rm -f config/hooks/007-ssh_authentication.chroot
+
 # Build the rootfs
 lb build
 
