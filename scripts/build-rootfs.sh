@@ -61,6 +61,40 @@ mkdir -p live-build && cd live-build
 # Query the system to locate livecd-rootfs auto script installation path
 cp -r "$(dpkg -L livecd-rootfs | grep "auto$")" auto
 
+# For questing: germinate seed server (ubuntu-archive-team.ubuntu.com) is
+# unreliable for development releases. Patch auto/config to make the germinate
+# call non-fatal, and pre-seed the output directory with stubs so add_task
+# doesn't abort on missing files. Our packages come from package-lists, not seeds.
+if [ "${SUITE}" == "questing" ]; then
+    python3 -c "
+import re
+with open('auto/config', 'r') as f:
+    s = f.read()
+s = re.sub(
+    r'(\(cd config/germinate-output && germinate\b.*?\))',
+    r'(\1 || true)',
+    s, flags=re.DOTALL)
+with open('auto/config', 'w') as f:
+    f.write(s)
+"
+    mkdir -p config/germinate-output
+    cat > config/germinate-output/structure <<'EOF'
+required:
+minimal: required
+standard: minimal required
+server: minimal standard required
+server-minimal: minimal required
+server-live: server minimal standard required
+server-ship: server minimal standard required
+EOF
+    for seed in required minimal standard server server-minimal server-live server-ship; do
+        : > "config/germinate-output/${seed}"
+        : > "config/germinate-output/${seed}.snaps"
+        printf "Task-Description: %s\nTask-Key: %s\n" "${seed}" "${seed}" \
+            > "config/germinate-output/${seed}.seedtext"
+    done
+fi
+
 set +e
 
 export ARCH=arm64
