@@ -197,9 +197,13 @@ else
     echo "ubuntu-server-rockchip" >> config/package-lists/my.list.chroot
 fi
 
-# Remove cloud-image SSH hook — fails on non-cloud images because
-# /etc/ssh/sshd_config.d/60-cloudimg-settings.conf doesn't exist
-rm -f config/hooks/007-ssh_authentication.chroot
+# Remove cloud-image-specific hooks that fail on non-cloud Rockchip builds:
+# - *ssh_authentication*: writes to /etc/ssh/sshd_config.d/60-cloudimg-settings.conf (absent)
+# - *cpc-fixes*: runs dpkg-reconfigure cloud-init (not installed)
+# - *ec2-version*: writes EC2 cloud branding marker (irrelevant)
+rm -f config/hooks/*ssh_authentication*.chroot
+rm -f config/hooks/*cpc*.chroot
+rm -f config/hooks/*ec2*.chroot
 
 # Build the rootfs
 lb build
