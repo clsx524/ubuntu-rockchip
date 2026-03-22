@@ -202,9 +202,13 @@ lb build
 
 set -eE
 
-# Verify the chroot was actually built
+# Verify the chroot was actually built with packages installed
 if [ ! -d chroot/dev ]; then
-    echo "Error: lb build produced incomplete chroot (missing /dev) — likely a germinate failure"
+    echo "Error: lb build produced incomplete chroot (missing /dev)"
+    exit 1
+fi
+if [ ! -d chroot/usr/bin ]; then
+    echo "Error: lb build produced incomplete chroot (missing /usr/bin — packages not installed)"
     exit 1
 fi
 
