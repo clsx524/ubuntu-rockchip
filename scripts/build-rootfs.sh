@@ -77,6 +77,19 @@ s = re.sub(
 with open('auto/config', 'w') as f:
     f.write(s)
 "
+
+    # Patch auto/build: when PROJECT=ubuntu-cpc, it writes chroot/etc/cloud/build.info
+    # but cloud-init is not installed so the directory doesn't exist. Add mkdir -p.
+    python3 -c "
+with open('auto/build', 'r') as f:
+    s = f.read()
+s = s.replace(
+    'cat > chroot/etc/cloud/build.info',
+    'mkdir -p chroot/etc/cloud; cat > chroot/etc/cloud/build.info'
+)
+with open('auto/build', 'w') as f:
+    f.write(s)
+"
     mkdir -p config/germinate-output
     cat > config/germinate-output/structure <<'EOF'
 required:
@@ -98,6 +111,7 @@ EOF
     done
 fi
 
+trap - ERR
 set +e
 
 export ARCH=arm64
@@ -209,6 +223,7 @@ rm -f config/hooks/*ec2*.chroot
 lb build
 
 set -eE
+trap 'echo Error: in $0 on line $LINENO' ERR
 
 # Verify the chroot was actually built with our meta-package installed
 if [ ! -d chroot/dev ]; then
