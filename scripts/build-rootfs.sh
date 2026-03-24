@@ -205,6 +205,8 @@ if [ "${PROJECT}" == "ubuntu" ]; then
         echo "ubiquity-frontend-gtk"
         echo "ubiquity-slideshow-ubuntu"
         echo "localechooser-data"
+        # SSH server for headless access (RK1 is a server blade)
+        echo "openssh-server"
     ) >> config/package-lists/my.list.chroot
 else
     # Specific packages to install for ubuntu server
@@ -218,6 +220,27 @@ fi
 rm -f config/hooks/*ssh_authentication*.chroot
 rm -f config/hooks/*cpc*.chroot
 rm -f config/hooks/*ec2*.chroot
+
+if [ "${PROJECT}" == "ubuntu" ]; then
+    # For the desktop image on a headless server blade like the RK1:
+    # The desktop tweaks hook purges cloud-init, so user-data on the boot partition
+    # won't run. Pre-create a default ubuntu user (password: ubuntu, must change at login).
+    cat > config/hooks/099-rockchip-desktop-user.chroot <<'HOOKEOF'
+#!/bin/bash
+set -e
+# Create default ubuntu user with password ubuntu (expires on first login)
+if ! id ubuntu >/dev/null 2>&1; then
+    useradd -m -s /bin/bash -G sudo,video,audio,plugdev,netdev ubuntu
+    echo 'ubuntu:ubuntu' | chpasswd
+    chage -d 0 ubuntu
+fi
+# Enable SSH password authentication
+if [ -f /etc/ssh/sshd_config ]; then
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+fi
+HOOKEOF
+    chmod +x config/hooks/099-rockchip-desktop-user.chroot
+fi
 
 # Build the rootfs
 lb build
