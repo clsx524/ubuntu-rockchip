@@ -222,24 +222,23 @@ rm -f config/hooks/*cpc*.chroot
 rm -f config/hooks/*ec2*.chroot
 
 if [ "${PROJECT}" == "ubuntu" ]; then
-    # For the desktop image on a headless server blade like the RK1:
-    # The desktop tweaks hook purges cloud-init, so user-data on the boot partition
-    # won't run. Pre-create a default ubuntu user (password: ubuntu, must change at login).
-    cat > config/hooks/099-rockchip-desktop-user.chroot <<'HOOKEOF'
+    # The desktop tweaks hook (020-ubuntu-rockchip-tweaks.chroot) purges cloud-init to
+    # avoid a conflict with oem-config. Reinstall it in a later hook so that user-data
+    # on the boot partition (/boot/firmware/user-data) runs on first boot and creates
+    # the default ubuntu user. Also enable SSH password auth.
+    cat > config/hooks/099-rockchip-desktop-cloudinit.chroot <<'HOOKEOF'
 #!/bin/bash
 set -e
-# Create default ubuntu user with password ubuntu (expires on first login)
-if ! id ubuntu >/dev/null 2>&1; then
-    useradd -m -s /bin/bash -G sudo,video,audio,plugdev,netdev ubuntu
-    echo 'ubuntu:ubuntu' | chpasswd
-    chage -d 0 ubuntu
+# Reinstall cloud-init so user-data on the boot partition is processed on first boot
+if ! dpkg -l cloud-init 2>/dev/null | grep -q '^ii'; then
+    apt-get -y install cloud-init
 fi
 # Enable SSH password authentication
 if [ -f /etc/ssh/sshd_config ]; then
     sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
 fi
 HOOKEOF
-    chmod +x config/hooks/099-rockchip-desktop-user.chroot
+    chmod +x config/hooks/099-rockchip-desktop-cloudinit.chroot
 fi
 
 # Build the rootfs
