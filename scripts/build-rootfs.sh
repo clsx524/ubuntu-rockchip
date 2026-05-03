@@ -65,7 +65,7 @@ cp -r "$(dpkg -L livecd-rootfs | grep "auto$")" auto
 # unreliable for development releases. Patch auto/config to make the germinate
 # call non-fatal, and pre-seed the output directory with stubs so add_task
 # doesn't abort on missing files. Our packages come from package-lists, not seeds.
-if [ "${SUITE}" == "questing" ]; then
+if [ "${SUITE}" == "questing" ] || [ "${SUITE}" == "resolute" ]; then
     python3 -c "
 import re
 with open('auto/config', 'r') as f:
@@ -163,7 +163,7 @@ if [ "${SUITE}" == "noble" ]; then
     ) > config/archives/extra-ppas-ignore.pref.chroot
 fi
 
-if [ "${SUITE}" == "questing" ]; then
+if [ "${SUITE}" == "questing" ] || [ "${SUITE}" == "resolute" ]; then
     # Add our custom rockchip apt repo
     # Use [trusted=yes] during rootfs build — live-build doesn't install
     # .gpg.chroot keys before apt-get update runs, so signed-by verification
@@ -193,7 +193,7 @@ fi
 # Generic packages to install
 echo "software-properties-common" > config/package-lists/my.list.chroot
 
-if [ "${SUITE}" == "questing" ]; then
+if [ "${SUITE}" == "questing" ] || [ "${SUITE}" == "resolute" ]; then
     echo "armbian-firmware" >> config/package-lists/my.list.chroot
 fi
 

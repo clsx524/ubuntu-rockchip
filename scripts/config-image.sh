@@ -133,7 +133,7 @@ setup_mountpoint $chroot_dir
 
 # For questing, install GPG keys before apt-get update since live-build
 # may not preserve them in the rootfs tarball
-if [ "${SUITE}" == "questing" ]; then
+if [ "${SUITE}" == "questing" ] || [ "${SUITE}" == "resolute" ]; then
     mkdir -p ${chroot_dir}/etc/apt/trusted.gpg.d
     curl -fsSL "${REPO_KEY_URL}" | gpg --dearmor \
         > ${chroot_dir}/etc/apt/trusted.gpg.d/ubuntu-rockchip.gpg
