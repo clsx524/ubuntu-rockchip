@@ -143,7 +143,11 @@ fi
 
 # Update packages
 chroot $chroot_dir apt-get update
-chroot $chroot_dir apt-get -y upgrade
+# Use dist-upgrade (not upgrade) so apt is allowed to install new dependencies
+# pulled in by upgraded packages. apt-get upgrade refuses to install new
+# packages, so e.g. ubuntu-rockchip-settings 2.0 -> 2.1 (which adds cloud-init
+# as a Depends) gets held back, leaving the image with the old empty 2.0 deb.
+chroot $chroot_dir apt-get -y dist-upgrade
     
 # Run config hook to handle board specific changes
 if [[ $(type -t config_image_hook__"${BOARD}") == function ]]; then
