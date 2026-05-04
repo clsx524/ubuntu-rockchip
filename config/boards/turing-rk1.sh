@@ -29,12 +29,14 @@ function config_image_hook__turing-rk1() {
         # The RK1 uses UART9 for console output
         sed -i 's/console=ttyS2,1500000/console=ttyS9,115200/g' "${rootfs}/etc/kernel/cmdline"
     elif [ "${suite}" == "oracular" ] || [ "${suite}" == "plucky" ] || [ "${suite}" == "questing" ] || [ "${suite}" == "resolute" ]; then
+        # Turing RK1 wires UART9 (febc0000) to the BMC serial proxy.
+        # Device tree (rk3588-turing-rk1.dts) sets stdout-path = "serial9";
+        # alias serial9 -> &uart9, so Linux exposes it as /dev/ttyS9.
+        # earlycon address must match uart9 in rk3588s.dtsi (febc0000).
         mkdir -p "${rootfs}/etc/kernel"
-        if [ -f "${rootfs}/etc/kernel/cmdline" ]; then
-            sed -i 's/console=ttyS2,1500000/console=ttyS0,115200/g' "${rootfs}/etc/kernel/cmdline"
-        else
-            echo "console=ttyS0,115200" > "${rootfs}/etc/kernel/cmdline"
-        fi
+        cat > "${rootfs}/etc/kernel/cmdline" <<'EOF'
+console=ttyS9,115200 earlycon=uart8250,mmio32,0xfebc0000 console=tty1 rootwait rw cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory
+EOF
     fi
 
     return 0

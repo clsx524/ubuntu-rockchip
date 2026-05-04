@@ -173,6 +173,16 @@ fi
 # Update the initramfs
 chroot ${chroot_dir} update-initramfs -u
 
+# Belt-and-suspenders: mark base cloud/server packages as manually installed
+# so apt-get autoremove (next step) cannot drop them after the kernel swap.
+# Without this, packages like cloud-init, udisks2, modemmanager, fwupd that
+# were originally pulled in as dependencies of the meta-package become
+# autoremovable orphans and disappear, leaving the image without a default
+# user (no cloud-init -> no `ubuntu` user) and no NetworkManager.
+chroot ${chroot_dir} apt-mark manual \
+    cloud-init openssh-server udisks2 fwupd modemmanager network-manager \
+    2>/dev/null || true
+
 # Remove packages
 chroot ${chroot_dir} apt-get -y clean
 chroot ${chroot_dir} apt-get -y autoclean
