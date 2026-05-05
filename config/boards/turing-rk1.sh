@@ -61,6 +61,18 @@ EOF
 
             mkdir -p "${rootfs}/lib/firmware"
             curl -fL --retry 3 -o "${rootfs}/lib/firmware/mali_csffw.bin" "${fw_url}"
+
+            # oem-config/ubiquity fails on BSP 6.1 kernel: ubiquity-dm cannot
+            # start X11 on VT7 during early boot, fails 5 times, drops to bash,
+            # and the service is never disabled so the loop repeats on every
+            # reboot. Bypass it: boot straight to GDM with a pre-created user.
+            ln -sf /lib/systemd/system/graphical.target \
+                "${rootfs}/etc/systemd/system/default.target"
+            rm -f "${rootfs}/var/lib/oem-config/run"
+
+            # Pre-create default ubuntu user (password: ubuntu)
+            chroot "${rootfs}" useradd -m -G sudo,video,audio,render -s /bin/bash ubuntu
+            echo 'ubuntu:ubuntu' | chroot "${rootfs}" chpasswd
         fi
     fi
 
